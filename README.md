@@ -1,21 +1,21 @@
 # nextjs-docker
 
-## Goal
+## 🎯 Goal
 
 This Dockerfile is optimized for **the fastest possible builds** in CI/CD environments where Docker images are rebuilt multiple times per day. It leverages advanced caching strategies, multi-stage builds, and modern Docker features to minimize build times on subsequent runs while keeping the final image size minimal.
 
 Key optimizations include:
-- **BuildKit cache mounts** for dependency and build artifact caching
-- **Multi-stage builds** to separate build dependencies from runtime
-- **Bun** for ultra-fast dependency installation (up to 25x faster than npm)
-- **Next.js standalone output** for minimal runtime footprint
-- **Strategic layer ordering** to maximize Docker layer caching
+- ⚡ **BuildKit cache mounts** for dependency and build artifact caching
+- 🏗️ **Multi-stage builds** to separate build dependencies from runtime
+- 🚀 **Bun** for ultra-fast dependency installation (up to 25x faster than npm)
+- 📦 **Next.js standalone output** for minimal runtime footprint
+- 🎯 **Strategic layer ordering** to maximize Docker layer caching
 
 ---
 
-## Dockerfile Breakdown
+## 📋 Dockerfile Breakdown
 
-### Syntax Declaration & Base Layer
+### 🔧 Syntax Declaration & Base Layer
 
 ```dockerfile
 # syntax=docker/dockerfile:1.7
@@ -32,7 +32,7 @@ ENV NODE_ENV=production
 
 ---
 
-### Builder Layer: Workspace Setup
+### 🏗️ Builder Layer: Workspace Setup
 
 ```dockerfile
 FROM base AS builder
@@ -46,7 +46,7 @@ WORKDIR /app
 
 ---
 
-### Builder Layer: Dependency Installation
+### 📦 Builder Layer: Dependency Installation
 
 ```dockerfile
 COPY package.json bun.lock ./
@@ -63,7 +63,7 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 
 ---
 
-### Builder Layer: Application Build
+### ⚙️ Builder Layer: Application Build
 
 ```dockerfile
 COPY . .
@@ -82,7 +82,7 @@ RUN --mount=type=cache,target=/app/.next/cache \
 
 ---
 
-### Runtime Layer: Base Setup
+### 🚀 Runtime Layer: Base Setup
 
 ```dockerfile
 FROM node:22-slim AS runner
@@ -108,7 +108,7 @@ ENV HOSTNAME=0.0.0.0
 
 ---
 
-### Runtime Layer: Security & User Configuration
+### 🔒 Runtime Layer: Security & User Configuration
 
 ```dockerfile
 RUN groupadd -g 1001 nodejs || true
@@ -122,7 +122,7 @@ RUN useradd -r -u 1001 -g nodejs service-user || true
 
 ---
 
-### Runtime Layer: Application Files & Startup
+### 🎬 Runtime Layer: Application Files & Startup
 
 ```dockerfile
 COPY --from=builder /app/.next/standalone ./
@@ -145,7 +145,7 @@ CMD ["node", "server.js"]
 
 ---
 
-## Building the Image
+## 🛠️ Building the Image
 
 ```bash
 docker build \
