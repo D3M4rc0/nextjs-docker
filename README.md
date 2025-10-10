@@ -166,6 +166,8 @@ docker run -p 3000:3000 my-nextjs-app
 
 This repository includes a comprehensive benchmark application in the `example/` directory to test and demonstrate the Dockerfile's performance optimization.
 
+> **Comparison Note:** The default Dockerfile used for comparison is based on [Vercel's official Next.js Docker example](https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile), adapted to support Bun lockfiles.
+
 ### Benchmark App Characteristics
 
 - **Framework:** Next.js 14 with App Router
@@ -173,6 +175,22 @@ This repository includes a comprehensive benchmark application in the `example/`
 - **Pre-rendering:** All pages statically generated at build time using `generateStaticParams`
 - **Build Delay:** Each page includes an artificial 200-400ms delay (random) to simulate real-world API calls
 - **Route Pattern:** `/[id]` where id ranges from 1 to 2000
+
+### Available Dockerfiles
+
+This repository includes two Dockerfiles for comparison:
+
+1. **`Dockerfile`** (Optimized) - The main optimized Dockerfile with:
+   - BuildKit 1.7 syntax for advanced features
+   - Bun for ultra-fast dependency installation
+   - Persistent cache mounts for dependencies and build artifacts
+   - Strategic multi-stage builds
+
+2. **`Dockerfile.default`** (Baseline) - Based on [Vercel's official example](https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile):
+   - Standard Node.js Alpine base
+   - Traditional npm/yarn/pnpm/bun package manager detection
+   - Multi-stage builds without cache mounts
+   - Industry-standard baseline for comparison
 
 ### Building the Benchmark App
 
@@ -184,25 +202,42 @@ cd example
 bun install
 cd ..
 
-# Build the Docker image
-docker build -f Dockerfile -t nextjs-benchmark ./example
+# Build with OPTIMIZED Dockerfile
+docker build -f Dockerfile -t nextjs-benchmark:optimized ./example
+
+# Build with DEFAULT Dockerfile (for comparison)
+docker build -f Dockerfile.default -t nextjs-benchmark:default ./example
 
 # Run the container
-docker run -p 3000:3000 nextjs-benchmark
+docker run -p 3000:3000 nextjs-benchmark:optimized
 ```
 
 Then visit `http://localhost:3000` to see the benchmark app in action.
 
-### Real-World Benchmark Results
+### Automated Benchmark Results
 
-Tested on **MacBook M3 Pro with 36GB RAM**:
+This repository includes a GitHub Actions workflow that automatically benchmarks both the optimized and default Dockerfiles on every push. The workflow runs two parallel jobs:
 
-| Build Type | Time | Cache Status | Notes |
-|------------|------|--------------|-------|
-| 🐢 **First build** | ~8m 45s | Cold (no cache) | Fresh build with no Docker layer cache or BuildKit mounts |
-| ⚡ **Code change rebuild** | ~52s | Warm (deps cached) | Modified single page component, dependencies and Next.js cache reused |
-| 🚀 **No-change rebuild** | ~8s | Hot (all cached) | No changes, all layers cached |
-| 🔄 **Dependency update** | ~2m 15s | Partial (code cached) | Updated one package.json dependency |
+1. **Optimized Dockerfile** - Uses BuildKit cache mounts, Bun, and multi-stage builds
+2. **Default Dockerfile** - Based on Vercel's official example
+
+Each job performs:
+- 🧊 **Cold build** - No cache, simulates first-time build
+- 🔥 **Warm build** - With cache, simulates code change rebuild
+
+**To view benchmark results:**
+- Check the [Actions tab](../../actions) in this repository
+- Look for "Docker Build Benchmark" workflow runs
+- Each run includes a detailed summary comparing both Dockerfiles
+
+**To run benchmarks locally:**
+```bash
+# Test optimized Dockerfile
+time docker build -f Dockerfile -t nextjs-benchmark:optimized ./example
+
+# Test default Dockerfile  
+time docker build -f Dockerfile.default -t nextjs-benchmark:default ./example
+```
 
 ### What Makes It Fast?
 
@@ -244,4 +279,4 @@ Expected performance (based on 2000-page benchmark app):
 - 🚀 **Rebuilds with no changes:** 5-15 seconds (99%+ time savings)
 - 🔄 **Dependency updates only:** 2-3 minutes (60%+ time savings)
 
-See the [Benchmark Example App](#-benchmark-example-app) section for detailed real-world results on MacBook M3 Pro.
+See the [Benchmark Example App](#-benchmark-example-app) section for automated benchmark results and comparison with the default Dockerfile.

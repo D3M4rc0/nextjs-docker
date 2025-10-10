@@ -15,7 +15,7 @@ async function fetchPageData(id: string): Promise<{ id: string; delay: number }>
 export async function generateStaticParams() {
   // Generate IDs from 1 to 2000
   return Array.from({ length: 2000 }, (_, i) => ({
-    id: String("page-" + (i + 1)),
+    id: String(i + 1),
   }))
 }
 
