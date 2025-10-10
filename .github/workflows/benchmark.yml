@@ -42,7 +42,7 @@ jobs:
       - name: Build with Optimized Dockerfile (Warm Cache)
         id: build-warm
         run: |
-          echo "🔥 Starting WARM build (with cache)..."
+          echo "🔥 Starting WARM build (code change, with cache)..."
           START_TIME=$(date +%s)
           docker buildx build \
             --file Dockerfile \
@@ -54,16 +54,32 @@ jobs:
           echo "build_time=${BUILD_TIME}" >> $GITHUB_OUTPUT
           echo "⏱️  Warm build completed in ${BUILD_TIME} seconds"
 
+      - name: Build with Optimized Dockerfile (Hot Cache - No Changes)
+        id: build-hot
+        run: |
+          echo "🚀 Starting HOT build (no changes, full cache)..."
+          START_TIME=$(date +%s)
+          docker buildx build \
+            --file Dockerfile \
+            --tag nextjs-benchmark:optimized-hot \
+            --progress=plain \
+            ./example 2>&1 | tee build-optimized-hot.log
+          END_TIME=$(date +%s)
+          BUILD_TIME=$((END_TIME - START_TIME))
+          echo "build_time=${BUILD_TIME}" >> $GITHUB_OUTPUT
+          echo "⏱️  Hot build completed in ${BUILD_TIME} seconds"
+
       - name: Summary
         run: |
           echo "## 🚀 Optimized Dockerfile Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Build Type | Time |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧊 Cold Cache | ${{ steps.build-cold.outputs.build_time }}s |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔥 Warm Cache | ${{ steps.build-warm.outputs.build_time }}s |" >> $GITHUB_STEP_SUMMARY
-          IMPROVEMENT=$(echo "scale=1; (1 - ${{ steps.build-warm.outputs.build_time }} / ${{ steps.build-cold.outputs.build_time }}) * 100" | bc)
-          echo "| 💨 Improvement | ${IMPROVEMENT}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Type | Time | vs Cold |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧊 Cold Cache (first build) | ${{ steps.build-cold.outputs.build_time }}s | baseline |" >> $GITHUB_STEP_SUMMARY
+          WARM_IMPROVEMENT=$(echo "scale=1; (1 - ${{ steps.build-warm.outputs.build_time }} / ${{ steps.build-cold.outputs.build_time }}) * 100" | bc)
+          echo "| 🔥 Warm Cache (code change) | ${{ steps.build-warm.outputs.build_time }}s | ${WARM_IMPROVEMENT}% faster |" >> $GITHUB_STEP_SUMMARY
+          HOT_IMPROVEMENT=$(echo "scale=1; (1 - ${{ steps.build-hot.outputs.build_time }} / ${{ steps.build-cold.outputs.build_time }}) * 100" | bc)
+          echo "| 🚀 Hot Cache (no changes) | ${{ steps.build-hot.outputs.build_time }}s | ${HOT_IMPROVEMENT}% faster |" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload build logs
         uses: actions/upload-artifact@v4
@@ -73,6 +89,7 @@ jobs:
           path: |
             build-optimized-cold.log
             build-optimized-warm.log
+            build-optimized-hot.log
 
   benchmark-default:
     name: "Benchmark: Default Dockerfile"
@@ -108,7 +125,7 @@ jobs:
       - name: Build with Default Dockerfile (Warm Cache)
         id: build-warm
         run: |
-          echo "🔥 Starting WARM build (with cache)..."
+          echo "🔥 Starting WARM build (code change, with cache)..."
           START_TIME=$(date +%s)
           docker buildx build \
             --file Dockerfile.default \
@@ -120,16 +137,32 @@ jobs:
           echo "build_time=${BUILD_TIME}" >> $GITHUB_OUTPUT
           echo "⏱️  Warm build completed in ${BUILD_TIME} seconds"
 
+      - name: Build with Default Dockerfile (Hot Cache - No Changes)
+        id: build-hot
+        run: |
+          echo "🚀 Starting HOT build (no changes, full cache)..."
+          START_TIME=$(date +%s)
+          docker buildx build \
+            --file Dockerfile.default \
+            --tag nextjs-benchmark:default-hot \
+            --progress=plain \
+            ./example 2>&1 | tee build-default-hot.log
+          END_TIME=$(date +%s)
+          BUILD_TIME=$((END_TIME - START_TIME))
+          echo "build_time=${BUILD_TIME}" >> $GITHUB_OUTPUT
+          echo "⏱️  Hot build completed in ${BUILD_TIME} seconds"
+
       - name: Summary
         run: |
           echo "## 📦 Default Dockerfile Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Build Type | Time |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧊 Cold Cache | ${{ steps.build-cold.outputs.build_time }}s |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔥 Warm Cache | ${{ steps.build-warm.outputs.build_time }}s |" >> $GITHUB_STEP_SUMMARY
-          IMPROVEMENT=$(echo "scale=1; (1 - ${{ steps.build-warm.outputs.build_time }} / ${{ steps.build-cold.outputs.build_time }}) * 100" | bc)
-          echo "| 💨 Improvement | ${IMPROVEMENT}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Type | Time | vs Cold |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧊 Cold Cache (first build) | ${{ steps.build-cold.outputs.build_time }}s | baseline |" >> $GITHUB_STEP_SUMMARY
+          WARM_IMPROVEMENT=$(echo "scale=1; (1 - ${{ steps.build-warm.outputs.build_time }} / ${{ steps.build-cold.outputs.build_time }}) * 100" | bc)
+          echo "| 🔥 Warm Cache (code change) | ${{ steps.build-warm.outputs.build_time }}s | ${WARM_IMPROVEMENT}% faster |" >> $GITHUB_STEP_SUMMARY
+          HOT_IMPROVEMENT=$(echo "scale=1; (1 - ${{ steps.build-hot.outputs.build_time }} / ${{ steps.build-cold.outputs.build_time }}) * 100" | bc)
+          echo "| 🚀 Hot Cache (no changes) | ${{ steps.build-hot.outputs.build_time }}s | ${HOT_IMPROVEMENT}% faster |" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload build logs
         uses: actions/upload-artifact@v4
@@ -139,6 +172,7 @@ jobs:
           path: |
             build-default-cold.log
             build-default-warm.log
+            build-default-hot.log
 
   compare-results:
     name: "Compare Results"

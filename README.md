@@ -221,9 +221,10 @@ This repository includes a GitHub Actions workflow that automatically benchmarks
 1. **Optimized Dockerfile** - Uses BuildKit cache mounts, Bun, and multi-stage builds
 2. **Default Dockerfile** - Based on Vercel's official example
 
-Each job performs:
-- 🧊 **Cold build** - No cache, simulates first-time build
-- 🔥 **Warm build** - With cache, simulates code change rebuild
+Each job performs three build stages:
+- 🧊 **Cold build** - No cache (`--no-cache`), simulates first-time build
+- 🔥 **Warm build** - With cache after code change, simulates typical development rebuild
+- 🚀 **Hot build** - Full cache with no changes, shows best-case caching performance
 
 **To view benchmark results:**
 - Check the [Actions tab](../../actions) in this repository
@@ -249,17 +250,24 @@ time docker build -f Dockerfile.default -t nextjs-benchmark:default ./example
 ### Testing Different Scenarios
 
 ```bash
-# Test 1: Clean build (no cache)
+# Scenario 1: Cold build (no cache)
 docker builder prune -a -f
-docker build -f Dockerfile -t nextjs-benchmark:test1 ./example
+time docker build -f Dockerfile -t nextjs-benchmark:cold ./example
 
-# Test 2: Code change (modify a file in example/app)
-# Edit example/app/page.tsx, then:
-docker build -f Dockerfile -t nextjs-benchmark:test2 ./example
+# Scenario 2: Warm build (code change with cache)
+# Edit a file, then rebuild
+echo "// Modified: $(date)" >> example/app/page.tsx
+time docker build -f Dockerfile -t nextjs-benchmark:warm ./example
 
-# Test 3: Dependency change
-# Edit example/package.json, then:
-docker build -f Dockerfile -t nextjs-benchmark:test3 ./example
+# Scenario 3: Hot build (no changes, full cache)
+time docker build -f Dockerfile -t nextjs-benchmark:hot ./example
+
+# Compare with default Dockerfile
+docker builder prune -a -f
+time docker build -f Dockerfile.default -t nextjs-benchmark:default-cold ./example
+echo "// Modified: $(date)" >> example/app/page.tsx
+time docker build -f Dockerfile.default -t nextjs-benchmark:default-warm ./example
+time docker build -f Dockerfile.default -t nextjs-benchmark:default-hot ./example
 ```
 
 ---
@@ -274,9 +282,8 @@ This Dockerfile is specifically optimized for CI/CD scenarios where:
 4. **Multiple builds per day** benefit from cached downloads and build artifacts
 
 Expected performance (based on 2000-page benchmark app):
-- 🐢 **First build:** 5-10 minutes (depending on project size and page count)
-- ⚡ **Subsequent builds with code changes:** 30-90 seconds (90%+ time savings)
-- 🚀 **Rebuilds with no changes:** 5-15 seconds (99%+ time savings)
-- 🔄 **Dependency updates only:** 2-3 minutes (60%+ time savings)
+- 🧊 **Cold build (first time):** 5-10 minutes (depending on project size and page count)
+- 🔥 **Warm build (code changes):** 30-90 seconds (90%+ time savings)
+- 🚀 **Hot build (no changes):** 5-15 seconds (99%+ time savings)
 
-See the [Benchmark Example App](#-benchmark-example-app) section for automated benchmark results and comparison with the default Dockerfile.
+The optimized Dockerfile shows the greatest improvement in warm/hot builds thanks to BuildKit cache mounts. See the [Benchmark Example App](#-benchmark-example-app) section for automated benchmark results and direct comparison with the default Dockerfile across all three scenarios.
