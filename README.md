@@ -1,4 +1,4 @@
-# nextjs-docker
+# ⚡ nextjs-docker
 
 ## 🎯 Goal
 
@@ -154,13 +154,13 @@ docker build \
   -t my-nextjs-app .
 ```
 
-## Running the Container
+## ▶️ Running the Container
 
 ```bash
 docker run -p 3000:3000 my-nextjs-app
 ```
 
-## CI/CD Performance Notes
+## ⚡ CI/CD Performance Notes
 
 This Dockerfile is specifically optimized for CI/CD scenarios where:
 
@@ -170,6 +170,6 @@ This Dockerfile is specifically optimized for CI/CD scenarios where:
 4. **Multiple builds per day** benefit from cached downloads and build artifacts
 
 Expected performance:
-- **First build:** 2-5 minutes (depending on project size)
-- **Subsequent builds with code changes:** 30-90 seconds
-- **Rebuilds with no changes:** 5-15 seconds
+- 🐢 **First build:** 2-5 minutes (depending on project size)
+- ⚡ **Subsequent builds with code changes:** 30-90 seconds
+- 🚀 **Rebuilds with no changes:** 5-15 seconds
